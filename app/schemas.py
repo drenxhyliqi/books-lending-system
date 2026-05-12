@@ -59,8 +59,6 @@ class CategoryResponse(CategoryBase):
         from_attributes = True
 
 # Book Class Validation
-
-
 class BookBase(BaseModel):
     title: str
     isbn: str
@@ -83,9 +81,8 @@ class BookResponse(BookBase):
 # Book Author nuk ka nevoj per schema
 # Pasi qe eshte vetem ure lidhese mes Books dhe Authors
 # Pra nuk e perdorim asnjehere si nje API endpoint
+
 # Loan Class Validation
-
-
 class LoanBase(BaseModel):
     member_id: int
     book_id: int
