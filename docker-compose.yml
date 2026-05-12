@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    env_file:
+      - .env.docker
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    env_file:
+      - .env.docker
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
