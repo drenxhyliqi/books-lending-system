@@ -233,7 +233,7 @@ def seed():
         db.add_all(loans)
         db.commit()
 
-        print("Seed data u shtua me sukses!")
+        print("Seed data u shtua me sukses")
         print(f"   {len(categories)} categories")
         print(f"   {len(authors)} authors")
         print(f"   {len(books)} books")
@@ -242,7 +242,7 @@ def seed():
 
     except Exception as e:
         db.rollback()
-        print(f" Error: {e}")
+        print(f"Error: {e}")
     finally:
         db.close()
 
