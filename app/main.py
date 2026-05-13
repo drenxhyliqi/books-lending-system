@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from typing_extensions import Annotated
 
 from fastapi import Depends, FastAPI, status
-from database import engine, SessionLocal, get_db
+from app.database import get_db
+from app.routers import members
 
 app = FastAPI()
-
-db_dependency = Annotated[Session, Depends(get_db)]
+app.include_router(members.router)
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
