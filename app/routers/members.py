@@ -5,7 +5,7 @@ from starlette import status
 
 # Database imports
 from app.database import get_db
-from app.models import Member
+from app.models import Member, Loan
 from app.schemas import MemberCreate, MemberResponse
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
@@ -76,11 +76,23 @@ async def update_member(db: db_dependency, member_id: int, member: MemberCreate)
 
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_member(db: db_dependency, member_id: int):
-    is_member = db.query(Member).filter(Member.id == member_id).first()
-    if not is_member:
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ky anetar nuk ekziston!"
         )
-    db.delete(is_member)
+
+    active_loan = db.query(Loan).filter(
+        Loan.member_id == member_id,
+        Loan.return_date == None
+    ).first()
+
+    if active_loan:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ky anetar ka loan aktive"
+        )
+
+    db.delete(member)
     db.commit()
