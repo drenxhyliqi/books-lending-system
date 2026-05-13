@@ -20,13 +20,13 @@ db_dependency = Annotated[Session, Depends(get_db)]
 async def get_categories(db: db_dependency):
     query = db.query(Category)
 
-    return query
+    return query.all()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(db: db_dependency, category: CategoryCreate):
-    category = Category(**category.model_dump())
-    db.add(category)
+    db_category = Category(**category.model_dump())
+    db.add(db_category)
     db.commit()
-    db.refresh(category)
-    return category
+    db.refresh(db_category)
+    return db_category
