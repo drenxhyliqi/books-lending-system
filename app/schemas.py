@@ -59,6 +59,8 @@ class CategoryResponse(CategoryBase):
         from_attributes = True
 
 # Book Class Validation
+
+
 class BookBase(BaseModel):
     title: str
     isbn: str

@@ -1,10 +1,10 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'app'))  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))  # noqa: E402
 
-from models import Member, Author, Category, Book, BookAuthor, Loan
-from database import SessionLocal
+from app.models import Member, Author, Category, Book, BookAuthor, Loan
+from app.database import SessionLocal
 from datetime import date
 
 
