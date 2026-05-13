@@ -16,7 +16,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 # GET / books/{id} #check
 # POST / books #check
 # PUT / books/{id} #check
-# DELETE / books/{id}
+# DELETE / books/{id} # check
 # GET    / books/{id}/authors
 
 
