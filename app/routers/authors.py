@@ -18,10 +18,12 @@ db_dependency = Annotated[Session, Depends(get_db)]
 # POST / authors
 
 @router.get("/", response_model=list[AuthorResponse])
-async def get_authors(db: db_dependency):
-    query = db.query(Author)
-
-    return query.all()
+async def get_authors(db: db_dependency,
+                      page: int = 1,
+                      page_size: int = 30
+                      ):
+    offset = (page - 1) * page_size
+    return db.query(Author).offset(offset).limit(page_size).all()
 
 
 @router.get("/{author_id}", response_model=AuthorResponse)
