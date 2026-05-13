@@ -9,7 +9,7 @@ from app.models import Author
 from app.schemas import AuthorCreate, AuthorResponse
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
-router = APIRouter(prefix="/author", tags=["author"])
+router = APIRouter(prefix="/authors", tags=["authors"])
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
