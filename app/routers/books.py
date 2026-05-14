@@ -7,6 +7,7 @@ from starlette import status
 from app.database import get_db
 from app.models import Book, BookAuthor
 from app.schemas import AuthorResponse, BookCreate, BookResponse
+from app.auth import verify_api_key
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/books", tags=["books"])
@@ -78,7 +79,7 @@ async def get_book_authors(db: db_dependency, book_id: int):
     return books.authors
 
 
-@router.post("/", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BookResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_book(db: db_dependency, book: BookCreate):
     dupe_isbn = db.query(Book).filter(Book.isbn == book.isbn).first()
 
@@ -95,7 +96,7 @@ async def create_book(db: db_dependency, book: BookCreate):
     return db_book
 
 
-@router.put("/{book_id}", response_model=BookResponse)
+@router.put("/{book_id}", response_model=BookResponse, dependencies=[Depends(verify_api_key)])
 async def update_book(db: db_dependency, book_id: int, book: BookCreate):
     book_exist = db.query(Book).filter(Book.id == book_id).first()
 
@@ -116,7 +117,7 @@ async def update_book(db: db_dependency, book_id: int, book: BookCreate):
     return book_exist
 
 
-@router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(verify_api_key)])
 async def delete_book(db: db_dependency, book_id: int):
     book = db.query(Book).filter(Book.id == book_id).first()
 

@@ -7,6 +7,7 @@ from starlette import status
 from app.database import get_db
 from app.models import Category
 from app.schemas import CategoryCreate, CategoryResponse
+from app.auth import verify_api_key
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -27,7 +28,7 @@ async def get_categories(db: db_dependency,
     return db.query(Category).offset(offset).limit(page_size).all()
 
 
-@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_category(db: db_dependency, category: CategoryCreate):
     db_category = Category(**category.model_dump())
     db.add(db_category)

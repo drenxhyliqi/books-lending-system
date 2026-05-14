@@ -7,6 +7,7 @@ from starlette import status
 from app.database import get_db
 from app.models import Author
 from app.schemas import AuthorCreate, AuthorResponse
+from app.auth import verify_api_key
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/authors", tags=["authors"])
@@ -39,7 +40,7 @@ async def get_author(db: db_dependency, author_id: int):
     return author_exist
 
 
-@router.post("/", response_model=AuthorResponse)
+@router.post("/", response_model=AuthorResponse, dependencies=[Depends(verify_api_key)])
 async def create_author(db: db_dependency,
                         author: AuthorCreate
                         ):

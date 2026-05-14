@@ -102,3 +102,26 @@ class LoanResponse(LoanBase):
 
     class Config:
         from_attributes = True
+
+
+# Borrowers
+
+class TopBorrowerResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    total_loans: int
+
+    class Config:
+        from_attributes = True
+
+
+class OverdueLoanResponse(BaseModel):
+    id: int
+    member_name: str
+    book_title: str
+    due_date: date
+    days_overdue: int
+
+    class Config:
+        from_attributes = True

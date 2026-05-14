@@ -9,6 +9,7 @@ from starlette import status
 from app.database import get_db
 from app.models import Loan, Member, Book
 from app.schemas import LoanCreate, LoanResponse
+from app.auth import verify_api_key
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/loans", tags=["loans"])
@@ -22,8 +23,9 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.get("/", response_model=list[LoanResponse], status_code=status.HTTP_200_OK)
 async def get_loans(db: db_dependency,
-                    active: bool | None = None,
-                    overdue: bool | None = None,
+                    # active: bool | None = None,
+                    # overdue: bool | None = None,
+                    status: str | None = None,
                     member_id: int | None = None,
                     page: int = 1,
                     page_size: int = 50
@@ -31,31 +33,25 @@ async def get_loans(db: db_dependency,
     query = db.query(Loan)
     offset = (page - 1) * page_size
 
-    # Filtrimi 1
-    if active is not None:
-        if active:
-            query = query.filter(Loan.return_date == None)
-        else:
-            query = query.filter(Loan.return_date != None)
+    # Filtrimi 1 — status
+    if status == "active":
+        query = query.filter(Loan.return_date == None)
+    elif status == "returned":
+        query = query.filter(Loan.return_date != None)
+    elif status == "overdue":
+        query = query.filter(
+            Loan.due_date < date.today(),
+            Loan.return_date == None
+        )
 
-    # Filtrimi 2
-    if overdue is not None:
-        if overdue:
-            query = query.filter(
-                Loan.due_date < date.today(),
-                Loan.return_date == None
-            )
-        else:
-            query = query.filter(Loan.due_date >= date.today())
-
-    # Filtrimi 3
+    # Filtrimi 2 — member_id
     if member_id is not None:
         query = query.filter(Loan.member_id == member_id)
 
-    return query(Loan).offset(offset).limit(page_size).all()
+    return query.offset(offset).limit(page_size).all()
 
 
-@router.post("/", response_model=LoanResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=LoanResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_loan(db: db_dependency, create_loan: LoanCreate):
     # Validimi 1 - A eshte anetar aktiv?
     member = db.query(Member).filter(
@@ -104,7 +100,7 @@ async def create_loan(db: db_dependency, create_loan: LoanCreate):
     return db_loan
 
 
-@router.post("/{book_id}/return")
+@router.post("/{book_id}/return", dependencies=[Depends(verify_api_key)])
 async def return_book(db: db_dependency, loan_id: int):
     # Validimi 1 a ekziston ky loan
     loan = db.query(Loan).filter(Loan.id == loan_id).first()

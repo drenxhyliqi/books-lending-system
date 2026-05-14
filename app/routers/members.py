@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
+# Auth
+from app.auth import verify_api_key
 
 # Database imports
 from app.database import get_db
@@ -57,7 +59,7 @@ async def get_member_loans(db: db_dependency, memb_id: int):
     return member.loans  # SELECT * FROM loans WHERE memb_id = 1
 
 
-@router.post("/", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=MemberResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_member(db: db_dependency, member: MemberCreate):
     email_exist = db.query(Member).filter(Member.email == member.email).first()
 
@@ -74,7 +76,7 @@ async def create_member(db: db_dependency, member: MemberCreate):
     return db_member
 
 
-@router.put("/{member_id}", response_model=MemberResponse, status_code=status.HTTP_200_OK)
+@router.put("/{member_id}", response_model=MemberResponse, status_code=status.HTTP_200_OK, dependencies=[Depends(verify_api_key)])
 async def update_member(db: db_dependency, member_id: int, member: MemberCreate):
     db_member = db.query(Member).filter(Member.id == member_id).first()
     if not db_member:
@@ -93,7 +95,7 @@ async def update_member(db: db_dependency, member_id: int, member: MemberCreate)
     return db_member
 
 
-@router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(verify_api_key)])
 async def delete_member(db: db_dependency, member_id: int):
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
