@@ -25,8 +25,11 @@ async def get_loans(db: db_dependency,
                     active: bool | None = None,
                     overdue: bool | None = None,
                     member_id: int | None = None,
+                    page: int = 1,
+                    page_size: int = 50
                     ):
     query = db.query(Loan)
+    offset = (page - 1) * page_size
 
     # Filtrimi 1
     if active is not None:
@@ -49,4 +52,4 @@ async def get_loans(db: db_dependency,
     if member_id is not None:
         query = query.filter(Loan.member_id == member_id)
 
-    return query.all()
+    return db.query(Loan).offset(offset).limit(page_size).all()
