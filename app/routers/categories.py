@@ -17,10 +17,14 @@ db_dependency = Annotated[Session, Depends(get_db)]
 # POST / categories
 
 @router.get("/", response_model=list[CategoryResponse])
-async def get_categories(db: db_dependency):
+async def get_categories(db: db_dependency,
+                         page: int = 1,
+                         page_size: int = 10
+                         ):
     query = db.query(Category)
+    offset = (page - 1) * page_size
 
-    return query.all()
+    return db.query(Category).offset(offset).limit(page_size).all()
 
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
