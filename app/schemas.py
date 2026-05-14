@@ -88,9 +88,9 @@ class BookResponse(BookBase):
 class LoanBase(BaseModel):
     member_id: int
     book_id: int
-    loan_date: date
+    # loan_date: date
     due_date: date
-    return_date: Optional[date] = None
+    # return_date: Optional[date] = None
 
 
 class LoanCreate(LoanBase):

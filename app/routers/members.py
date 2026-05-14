@@ -6,7 +6,7 @@ from starlette import status
 # Database imports
 from app.database import get_db
 from app.models import Member, Loan
-from app.schemas import MemberCreate, MemberResponse
+from app.schemas import LoanResponse, MemberCreate, MemberResponse
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/members", tags=["members"])
@@ -42,6 +42,19 @@ async def get_member(db: db_dependency, member_id: int):
             detail='Pjestari nuk u gjet!'
         )
     return member
+
+
+@router.get("/{member_id}/loans", response_model=list[LoanResponse])
+async def get_member_loans(db: db_dependency, memb_id: int):
+    member = db.query(Member).filter(Member.id == memb_id).first()
+
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Anetari nuk u gjet!"
+        )
+
+    return member.loans  # SELECT * FROM loans WHERE memb_id = 1
 
 
 @router.post("/", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)

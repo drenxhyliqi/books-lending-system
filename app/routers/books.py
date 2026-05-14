@@ -6,7 +6,7 @@ from starlette import status
 # Database imports
 from app.database import get_db
 from app.models import Book, BookAuthor
-from app.schemas import BookCreate, BookResponse
+from app.schemas import AuthorResponse, BookCreate, BookResponse
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/books", tags=["books"])
@@ -63,6 +63,19 @@ async def get_book(db: db_dependency,
         )
 
     return book_exists
+
+
+@router.get("/{book_id}/authors", response_model=list[AuthorResponse])
+async def get_book_authors(db: db_dependency, book_id: int):
+    books = db.query(Book).filter(Book.id == book_id).first()
+
+    if not books:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Libri nuk gjendet!"
+        )
+
+    return books.authors
 
 
 @router.post("/", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
