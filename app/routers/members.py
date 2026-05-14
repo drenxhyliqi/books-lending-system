@@ -20,11 +20,17 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/", response_model=list[MemberResponse])  # Get member me filter
-async def get_members(db: db_dependency, is_active: bool | None = None):
+async def get_members(db: db_dependency,
+                      is_active: bool | None = None,
+                      page: int = 1,
+                      page_size: int = 100
+                      ):
     query = db.query(Member)  # SELECT * FROM members
+    offset = (page - 1) * page_size
     if is_active is not None:  # WHERE is_active = true
         query = query.filter(Member.is_active == is_active)
-    return query.all()  # Ekzekuton queryn
+    # Ekzekuton queryn
+    return db.query(Member).offset(offset).limit(page_size).all()
 
 
 @router.get("/{member_id}", response_model=MemberResponse)
