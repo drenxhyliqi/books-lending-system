@@ -24,8 +24,12 @@ db_dependency = Annotated[Session, Depends(get_db)]
 async def get_books(db: db_dependency,
                     category_id: int | None = None,
                     author_id: int | None = None,
-                    available: bool | None = None):
+                    available: bool | None = None,
+                    page: int = 1,
+                    page_size: int = 30
+                    ):
     query = db.query(Book)
+    offset = (page - 1) * page_size
     # Filtrimi 1
     if category_id is not None:
         query = query.filter(Book.category_id == category_id)
@@ -43,7 +47,7 @@ async def get_books(db: db_dependency,
         else:
             query = query.filter(Book.total_copies == 0)
 
-    return query.all()
+    return db.query(Book).offset(offset).limit(page_size).all()
 
 
 @router.get("/{book_id}", response_model=BookResponse)
