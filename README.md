@@ -182,3 +182,5 @@ The toughest part was `loans.py`, especially the filtering logic and the validat
 The biggest thing I learned was how a backend system actually comes together, the database connection, the models, the schemas, and how data goes all the way to whoever is consuming the API. Alembic was new to me and I really liked it, basically I learnt that is like Git but for your database, letting you update the schema without wiping everything and starting over
 
 If I had more time, I would replace the API key auth with a proper admin user system. Regular users would only have access to GET endpoints, while admins would get a JWT token on login and that token would be required for any endpoint that creates, updates, or deletes data.
+
+I know this is not a good approach but if you need the key to test the api endpoints that require that, here is it 'apikeylibrary' I added this on the .env file but since you can not have access in that, and you might need it to test the endpoints I will add it here.
