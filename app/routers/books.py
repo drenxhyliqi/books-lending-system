@@ -1,11 +1,14 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 from typing import Annotated
 from starlette import status
 
 # Database imports
 from app.database import get_db
-from app.models import Book, BookAuthor
+from app.models import Book, BookAuthor, Loan
 from app.schemas import AuthorResponse, BookCreate, BookResponse
 from app.auth import verify_api_key
 
@@ -49,6 +52,71 @@ async def get_books(db: db_dependency,
             query = query.filter(Book.total_copies == 0)
 
     return db.query(Book).offset(offset).limit(page_size).all()
+
+
+@router.get("/search")
+async def search_books(
+    db: db_dependency,
+    q: str | None = None,
+    category_id: int | None = None,
+    author_id: int | None = None,
+    available_only: bool | None = None,
+    published_after: int | None = None,
+    published_before: int | None = None,
+    sort_by: str = 'title',
+    order_by: str = 'asc',
+    page: int = 1,
+    page_size: int = 20
+):
+    query = db.query(Book).options(joinedload(Book.authors))
+
+    # Filtrimet
+    if q:
+        query = query.filter(Book.title.ilike(f"%{q}%"))
+
+    if category_id:
+        query = query.filter(Book.category_id == category_id)
+
+    if author_id:
+        query = query.join(BookAuthor).filter(
+            BookAuthor.author_id == author_id)
+
+    if available_only:
+        query = query.filter(Book.total_copies > 0)
+
+    if published_after:
+        query = query.filter(Book.published_year >=
+                             date(published_after, 1, 1))
+
+    if published_before:
+        query = query.filter(Book.published_year <=
+                             date(published_before, 12, 31))
+
+    # Sortimi
+    if sort_by == 'title':
+        order = Book.title.asc() if order_by == "asc" else Book.title.desc()
+    elif sort_by == "published_year":
+        order = Book.published_year.asc() if order_by == "asc" else Book.published_year.desc()
+    elif sort_by == "popularity":
+        query = query.outerjoin(Loan).group_by(Book.id)
+        order = func.count(Loan.id).asc(
+        ) if order_by == "asc" else func.count(Loan.id).desc()
+    else:
+        order = Book.title.asc()
+
+    query = query.order_by(order)
+
+    total = query.count()
+    total_pages = (total + page_size - 1) // page_size
+    # Pagination
+    books = query.offset((page - 1) * page_size).limit(page_size).all()
+    return {
+        "items": books,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": total_pages
+    }
 
 
 @router.get("/{book_id}", response_model=BookResponse)
