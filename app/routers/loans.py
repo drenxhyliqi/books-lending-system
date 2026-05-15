@@ -27,6 +27,7 @@ async def get_loans(db: db_dependency,
                     # overdue: bool | None = None,
                     status: str | None = None,
                     member_id: int | None = None,
+                    book_id: int | None = None,
                     page: int = 1,
                     page_size: int = 50
                     ):
@@ -49,6 +50,10 @@ async def get_loans(db: db_dependency,
         query = query.filter(Loan.member_id == member_id)
 
     return query.offset(offset).limit(page_size).all()
+
+    # 3
+    if book_id is not None:
+        query = query.filter(Loan.book_id == book_id)
 
 
 @router.post("/", response_model=LoanResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
