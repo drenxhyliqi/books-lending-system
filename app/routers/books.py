@@ -9,7 +9,7 @@ from starlette import status
 # Database imports
 from app.database import get_db
 from app.models import Author, Book, BookAuthor, Category, Loan
-from app.schemas import AuthorResponse, BookCreate, BookResponse, BookSearchPage, LoanResponse
+from app.schemas import AuthorResponse, BookCreate, BookResponse, BookSearchPage, BookSearchResult, LoanResponse
 from app.auth import verify_api_key
 from app.ai import book_to_text, create_embedding
 
@@ -22,6 +22,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 # POST / books #check
 # PUT / books/{id} #check
 # DELETE / books/{id} # check
+# GET    / books/semantic-search
 # GET    / books/{id}/authors
 # GET    / books/{id}/loan-history
 # POST   / books/{id}/authors/{author_id}
@@ -131,6 +132,42 @@ async def search_books(
         "total": total,
         "total_pages": total_pages
     }
+
+
+# Duhet me qene para /{book_id}, perndryshe "semantic-search" lexohet si id
+@router.get("/semantic-search", response_model=list[BookSearchResult])
+async def semantic_search(db: db_dependency,
+                          q: str = Query(min_length=1),
+                          limit: int = Query(5, ge=1, le=20)
+                          ):
+    # Pyetja kthehet ne vektor me te njejtin model si librat
+    query_embedding = create_embedding(q)
+
+    # Distanca kosinus: 0 = kuptim i njejte, 1 = pa lidhje
+    distance = Book.embedding.cosine_distance(query_embedding)
+
+    # ORDER BY distance e perdor indeksin HNSW, librat pa embedding nuk merren
+    results = (
+        db.query(Book, distance.label("distance"))
+        .filter(Book.embedding != None)
+        .order_by(distance)
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        BookSearchResult(
+            id=book.id,
+            title=book.title,
+            isbn=book.isbn,
+            category_id=book.category_id,
+            total_copies=book.total_copies,
+            published_year=book.published_year,
+            description=book.description,
+            similarity=round(1 - distance, 4)
+        )
+        for book, distance in results
+    ]
 
 
 @router.get("/{book_id}", response_model=BookResponse)

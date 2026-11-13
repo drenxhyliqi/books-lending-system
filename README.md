@@ -157,6 +157,7 @@ DELETE /api/v1/members/{id}
 ```
 GET    /api/v1/books/
 GET    /api/v1/books/search
+GET    /api/v1/books/semantic-search
 GET    /api/v1/books/{id}
 GET    /api/v1/books/{id}/authors
 GET    /api/v1/books/{id}/loan-history

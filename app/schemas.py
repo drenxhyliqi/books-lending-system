@@ -95,6 +95,12 @@ class BookSearchPage(BaseModel):
     total_pages: int
 
 
+# Rezultati i kerkimit semantik: libri dhe sa i afert eshte me pyetjen
+# similarity afer 1 = kuptim shume i ngjashem, afer 0 = pa lidhje
+class BookSearchResult(BookResponse):
+    similarity: float
+
+
 # Book Author nuk ka nevoj per schema
 # Pasi qe eshte vetem ure lidhese mes Books dhe Authors
 # Pra nuk e perdorim asnjehere si nje API endpoint
