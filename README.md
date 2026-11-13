@@ -9,7 +9,7 @@ A backend API for managing a small library — members borrow books, books have 
 ### Prerequisites
 
 - Python 3.13
-- PostgreSQL
+- PostgreSQL with the pgvector extension
 - (Optional) Docker
 
 ### Installation
@@ -30,6 +30,9 @@ Create a `.env` file in the root directory:
 ```
 DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/books_lending
 API_KEY=library-secret-key
+OPENAI_API_KEY=your-openai-key
+OPENAI_CHAT_MODEL=gpt-6.1-sol
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
 ---
@@ -93,6 +96,9 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=yourpassword
 POSTGRES_DB=books_lending
 API_KEY=library-secret-key
+OPENAI_API_KEY=your-openai-key
+OPENAI_CHAT_MODEL=gpt-6.1-sol
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
 ---
