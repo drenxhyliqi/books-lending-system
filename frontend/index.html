@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="sq">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Biblioteka</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div class="bar">
+            <h1>Biblioteka</h1>
+            <form id="key-form">
+                <label for="api-key">API key</label>
+                <input type="password" id="api-key" autocomplete="off">
+                <button type="submit">Ruaj</button>
+            </form>
+        </div>
+        <nav>
+            <a href="#librat">Librat</a>
+            <a href="#bibliotekari">Bibliotekari</a>
+            <a href="#anetaret">Anetaret</a>
+            <a href="#huazimet">Huazimet</a>
+            <a href="#autoret">Autoret dhe kategorite</a>
+            <a href="#raportet">Raportet</a>
+        </nav>
+    </header>
+
+    <main>
+        <p id="message" role="status" hidden></p>
+
+        <section id="librat" hidden>
+            <div class="title-row">
+                <h2>Librat</h2>
+                <button type="button" id="add-book" class="primary">Shto liber</button>
+            </div>
+
+            <form id="book-filters" class="filters">
+                <input type="search" name="q" placeholder="Kerko sipas titullit">
+                <select name="category_id" data-list="categories" data-empty="Te gjitha kategorite"></select>
+                <select name="author_id" data-list="authors" data-empty="Te gjithe autoret"></select>
+                <select name="sort">
+                    <option value="title:asc">Titulli A-Z</option>
+                    <option value="title:desc">Titulli Z-A</option>
+                    <option value="published_year:desc">Me te rinjte</option>
+                    <option value="published_year:asc">Me te vjetrit</option>
+                    <option value="popularity:desc">Me te huazuarit</option>
+                </select>
+                <label class="check"><input type="checkbox" name="available_only"> Vetem te lirat</label>
+            </form>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Titulli</th>
+                            <th>Autoret</th>
+                            <th>Kategoria</th>
+                            <th>ISBN</th>
+                            <th>Viti</th>
+                            <th class="num">Kopje</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="books-body"></tbody>
+                </table>
+            </div>
+
+            <div class="pager">
+                <button type="button" id="books-prev">Mbrapa</button>
+                <span id="books-page"></span>
+                <button type="button" id="books-next">Para</button>
+            </div>
+        </section>
+
+        <section id="bibliotekari" hidden>
+            <h2>Bibliotekari</h2>
+            <p class="hint">Shkruaj cfare do te lexosh dhe bibliotekari te rekomandon libra qe i kemi ne biblioteke.</p>
+
+            <div id="chat" class="chat" aria-live="polite"></div>
+
+            <form id="chat-form" class="chat-form">
+                <input name="question" maxlength="500" autocomplete="off" required
+                    placeholder="p.sh. Me duhet te lexoj dicka per universin" aria-label="Pyetja">
+                <button type="submit" class="primary">Dergo</button>
+            </form>
+        </section>
+
+        <section id="anetaret" hidden>
+            <div class="title-row">
+                <h2>Anetaret</h2>
+                <button type="button" id="add-member" class="primary">Shto anetar</button>
+            </div>
+
+            <form id="member-filters" class="filters">
+                <select name="is_active">
+                    <option value="">Te gjithe</option>
+                    <option value="true">Vetem aktiv</option>
+                    <option value="false">Vetem joaktiv</option>
+                </select>
+            </form>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Emri i plote</th>
+                            <th>Email</th>
+                            <th>Anetaresuar me</th>
+                            <th>Statusi</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="members-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="huazimet" hidden>
+            <h2>Huazimet</h2>
+
+            <form id="loan-form" class="panel">
+                <h3>Huazim i ri</h3>
+                <div class="fields">
+                    <label>Anetari
+                        <select name="member_id" data-list="activeMembers" data-empty="Zgjidh anetarin" required></select>
+                    </label>
+                    <label>Libri
+                        <select name="book_id" data-list="books" data-empty="Zgjidh librin" required></select>
+                    </label>
+                    <label>Afati i kthimit
+                        <input type="date" name="due_date" required>
+                    </label>
+                    <button type="submit" class="primary">Huazo</button>
+                </div>
+            </form>
+
+            <form id="loan-filters" class="filters">
+                <select name="status">
+                    <option value="">Te gjitha</option>
+                    <option value="active">Aktive</option>
+                    <option value="overdue">Me vonese</option>
+                    <option value="returned">Te kthyera</option>
+                </select>
+                <select name="member_id" data-list="members" data-empty="Te gjithe anetaret"></select>
+            </form>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Anetari</th>
+                            <th>Libri</th>
+                            <th>Marre me</th>
+                            <th>Afati</th>
+                            <th>Kthyer me</th>
+                            <th>Statusi</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="loans-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="autoret" hidden>
+            <div class="columns">
+                <div>
+                    <h2>Autoret</h2>
+                    <form id="author-form" class="panel">
+                        <div class="fields">
+                            <label>Emri i plote
+                                <input name="full_name" required>
+                            </label>
+                            <label>Shteti
+                                <input name="country" required>
+                            </label>
+                            <button type="submit" class="primary">Shto autor</button>
+                        </div>
+                    </form>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Emri i plote</th>
+                                    <th>Shteti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="authors-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h2>Kategorite</h2>
+                    <form id="category-form" class="panel">
+                        <div class="fields">
+                            <label>Emri
+                                <input name="name" required>
+                            </label>
+                            <button type="submit" class="primary">Shto kategori</button>
+                        </div>
+                    </form>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Emri</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="raportet" hidden>
+            <div class="stack">
+                <div>
+                    <h2>Huazuesit me aktiv</h2>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Anetari</th>
+                                    <th>Email</th>
+                                    <th class="num">Huazime</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h2>Huazime me vonese</h2>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Anetari</th>
+                                    <th>Libri</th>
+                                    <th>Afati</th>
+                                    <th class="num">Dite vonese</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overdue-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <dialog id="book-dialog">
+        <form id="book-form">
+            <h3 id="book-dialog-title">Shto liber</h3>
+            <label>Titulli
+                <input name="title" required>
+            </label>
+            <label>ISBN
+                <input name="isbn" required>
+            </label>
+            <label>Kategoria
+                <select name="category_id" data-list="categories" data-empty="Zgjidh kategorine" required></select>
+            </label>
+            <label>Numri i kopjeve
+                <input type="number" name="total_copies" min="0" required>
+            </label>
+            <label>Viti i botimit
+                <input type="number" name="year" min="1" max="9999" required>
+            </label>
+            <label>Pershkrimi
+                <textarea name="description" rows="3"></textarea>
+            </label>
+            <fieldset>
+                <legend>Autoret</legend>
+                <div id="book-authors"></div>
+            </fieldset>
+            <div class="dialog-actions">
+                <button type="button" data-close>Anulo</button>
+                <button type="submit" class="primary">Ruaj</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="member-dialog">
+        <form id="member-form">
+            <h3 id="member-dialog-title">Shto anetar</h3>
+            <label>Emri i plote
+                <input name="full_name" required>
+            </label>
+            <label>Email
+                <input type="email" name="email" required>
+            </label>
+            <label>Data e anetaresimit
+                <input type="date" name="join_date" required>
+            </label>
+            <label class="check"><input type="checkbox" name="is_active"> Anetar aktiv</label>
+            <div class="dialog-actions">
+                <button type="button" data-close>Anulo</button>
+                <button type="submit" class="primary">Ruaj</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="member-loans-dialog">
+        <h3 id="member-loans-title"></h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Libri</th>
+                        <th>Marre me</th>
+                        <th>Afati</th>
+                        <th>Kthyer me</th>
+                    </tr>
+                </thead>
+                <tbody id="member-loans-body"></tbody>
+            </table>
+        </div>
+        <div class="dialog-actions">
+            <button type="button" data-close>Mbyll</button>
+        </div>
+    </dialog>
+
+    <dialog id="recommend-dialog">
+        <h3 id="recommend-title"></h3>
+        <ul id="recommend-list" class="recommend-list"></ul>
+        <div class="dialog-actions">
+            <button type="button" data-close>Mbyll</button>
+        </div>
+    </dialog>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

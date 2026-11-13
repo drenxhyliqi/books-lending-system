@@ -78,6 +78,10 @@ The API will be available at `http://localhost:8000`
 
 Interactive docs at `http://localhost:8000/docs`
 
+### Frontend
+
+The same server also serves a small web interface at `http://localhost:8000/`. It is plain HTML, CSS and JavaScript in the `frontend/` folder, with no build step. To add, edit or delete anything, type the API key in the field at the top of the page.
+
 ---
 
 ## Running with Docker
