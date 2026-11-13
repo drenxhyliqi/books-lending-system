@@ -194,6 +194,11 @@ GET    /api/v1/reports/top-borrowers
 GET    /api/v1/reports/overdue-loans
 ```
 
+### AI
+```
+POST   /api/v1/ai/ask
+```
+
 ---
 
 ## Notes

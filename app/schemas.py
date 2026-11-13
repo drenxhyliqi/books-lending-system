@@ -127,6 +127,23 @@ class LoanResponse(LoanBase):
         from_attributes = True
 
 
+# AI Class Validation
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+
+
+# Forma qe duhet ta ktheje modeli kur e kthen pyetjen ne kerkim
+class SearchQuery(BaseModel):
+    query: str
+    language: str
+
+
+# Pergjigjja e modelit validohet me kete schema para se te kthehet
+class AskResponse(BaseModel):
+    answer: str
+    book_ids: list[int]
+
+
 # Borrowers
 
 class TopBorrowerResponse(BaseModel):
