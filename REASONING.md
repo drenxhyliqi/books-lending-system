@@ -32,7 +32,20 @@ Returning 409 Conflict makes this explicit: the request is valid, but the curren
 
 ## 5. How I structured the test suite
 
-I have not implemented this feature into the project yet.
+The tests are in `tests/test_ai.py` and cover the AI endpoints. They use FastAPI's `TestClient` and `monkeypatch`, so no test ever calls OpenAI and running them costs nothing.
+
+Instead of real embeddings the tests use fake vectors that point in completely different directions, so I know exactly which book should be the closest one. A fixture creates two test books and a test member before each test and deletes them afterwards.
+
+What they check:
+
+- semantic search returns the closest book first
+- the librarian removes a book id that was not one of the retrieved books
+- the librarian says it found nothing, without calling the model a second time, when no book is close enough
+- recommendations never include a book the member already borrowed
+- an OpenAI error returns 503 and not a 500
+
+The rest of the API (members, books, loans) still has no automated tests.
+
 ---
 
 ## 6. Scope choices
@@ -45,7 +58,36 @@ About 90% of the code in this project I can read, explain, and defend. I used AI
 
 ---
 
-## 7. External resources used
+## 7. Why pgvector
+
+The project already used PostgreSQL, so I added the pgvector extension instead of a separate vector database. The embedding is one more column on the `books` table, next to the title and the description.
+
+Because it is the same database, one query can mix normal SQL with the similarity search. The recommendations endpoint does this: it orders books by distance to the member's taste and excludes the books they already borrowed with a normal `NOT IN` filter.
+
+The embedding is created from the title, description, category and authors of a book, with the `text-embedding-3-small` model (1536 numbers). The migration also adds an HNSW index for cosine distance. With 20 books it makes no difference, it is there for when the table grows.
+
+One thing I found while testing: the descriptions are in English, and a question in Albanian did not find the right books. "me duhet te lexoj dicka per universin" put the right book in fifth place. So the librarian first asks the model to turn the question into a short English search query, and that query is what gets embedded.
+
+---
+
+## 8. How I stop the model from inventing books
+
+The model never sees the whole database and never chooses from memory. Each step limits what it can do:
+
+1. The 5 closest books are found in the database first. Only those books are sent to the model.
+2. If even the closest book has a similarity under 0.35, the API returns a fixed "I could not find a book" message and the model is not asked at all. I picked 0.35 from testing: fitting books scored 0.39 or more, unrelated ones around 0.26.
+3. The model has to answer in JSON, and the answer is validated with a Pydantic schema. If it does not match, the API returns 503.
+4. Every `book_id` in the answer that was not one of the 5 retrieved books is removed.
+
+For recommendations the model does not choose the books at all. The database chooses them, and the model only writes one sentence per book.
+
+What this does not cover: the text of the answer is free text, so it cannot be validated the same way. That part depends on the prompt.
+
+No member data is sent to OpenAI, only book titles and descriptions.
+
+---
+
+## 9. External resources used
 
 - [dbdiagram.io](https://dbdiagram.io) — for visualising and planning the database schema
 - [FastAPI documentation](https://fastapi.tiangolo.com) — mainly for reference on routing, dependencies, and request handling

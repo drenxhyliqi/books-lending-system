@@ -208,6 +208,113 @@ POST   /api/v1/ai/ask
 
 ---
 
+## AI features
+
+These use the OpenAI API and the pgvector extension. Every book has an embedding, a list of 1536 numbers that represents the meaning of its title, description, category and authors. The model only ever sees books that were found in the database.
+
+### Semantic search
+
+Finds books by meaning instead of matching words in the title. Works best with English queries, because the book descriptions are in English.
+
+```
+GET /api/v1/books/semantic-search?q=space and black holes&limit=2
+```
+
+```json
+[
+  {
+    "title": "A Brief History of Time",
+    "isbn": "978-0553380163",
+    "category_id": 2,
+    "total_copies": 5,
+    "published_year": "1988-01-01",
+    "description": "An accessible tour of cosmology: the big bang, black holes, the nature of time and the search for a unified theory.",
+    "id": 11,
+    "similarity": 0.35
+  },
+  {
+    "title": "The Grand Design",
+    "isbn": "978-0553384666",
+    "category_id": 2,
+    "total_copies": 3,
+    "published_year": "2010-01-01",
+    "description": "A popular science book arguing that the laws of physics can explain why the universe exists, including M-theory and multiple universes.",
+    "id": 12,
+    "similarity": 0.3119
+  }
+]
+```
+
+`similarity` is `1 - cosine distance`, so a higher number means a closer match.
+
+### AI librarian
+
+Answers a question in Albanian or English and recommends books from the library. Requires the API key.
+
+```
+POST /api/v1/ai/ask
+X-API-Key: library-secret-key
+
+{ "question": "me duhet te lexoj dicka per universin" }
+```
+
+```json
+{
+  "answer": "Për të lexuar për universin, të rekomandoj të fillosh me “A Brief History of Time”, që shpjegon Big Bengun, vrimat e zeza dhe natyrën e kohës në mënyrë të kuptueshme. Më pas mund të lexosh “The Grand Design”, që trajton ligjet e fizikës, ekzistencën e universit dhe idenë e universeve të shumëfishta.",
+  "book_ids": [11, 12]
+}
+```
+
+How it works:
+
+1. The model turns the question into a short English search query.
+2. The query is embedded and the 5 closest books are loaded from the database.
+3. If even the closest book is below a similarity of 0.35, the API answers that the library has no book for this, without asking the model again.
+4. Otherwise the model gets only those 5 books and writes the answer.
+5. Any `book_id` in the answer that was not one of those 5 books is removed.
+
+When the library has nothing that fits:
+
+```json
+{
+  "answer": "Nuk gjeta asnje liber ne biblioteke qe i pershtatet kesaj. Me trego nje teme ose lloj libri qe te intereson.",
+  "book_ids": []
+}
+```
+
+In the web interface this is the "Bibliotekari" page.
+
+### Recommendations for a member
+
+Suggests books that are similar to what the member has borrowed and that they have never borrowed. Only book titles and descriptions are sent to the model, never the member's name or email.
+
+```
+GET /api/v1/members/1/recommendations?limit=3
+```
+
+```json
+[
+  {
+    "title": "The Clean Coder",
+    "isbn": "978-0137081073",
+    "category_id": 3,
+    "total_copies": 3,
+    "published_year": "2011-01-01",
+    "description": "A code of conduct for professional programmers: estimates, pressure, saying no, and taking responsibility for your work.",
+    "id": 5,
+    "reason": "Plotëson parimet e Clean Code me këshilla për përgjegjësinë dhe sjelljen profesionale të programuesit."
+  }
+]
+```
+
+If the member has no loans yet, the most borrowed books are returned and the model is not called.
+
+### Errors
+
+If OpenAI cannot be reached, the key is wrong, or the model returns something that does not match the expected shape, these endpoints return `503` with a message in Albanian.
+
+---
+
 ## Notes
 
 lighthouse
