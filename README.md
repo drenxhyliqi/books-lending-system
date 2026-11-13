@@ -117,6 +117,8 @@ OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 pytest tests/ -v
 ```
 
+The tests need the database running with migrations applied. They never call OpenAI (the calls are replaced with fakes), and each test creates its own rows and deletes them afterwards.
+
 ---
 
 ## Authentication
