@@ -1,13 +1,13 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 # Member Class Validation
 class MemberBase(BaseModel):
     full_name: str
-    email: str
+    email: EmailStr  # nuk pranon tekst qe nuk eshte email
     join_date: date
     is_active: bool = True
 
@@ -65,7 +65,7 @@ class BookBase(BaseModel):
     title: str
     isbn: str
     category_id: int
-    total_copies: int
+    total_copies: int = Field(ge=0)  # nuk lejohet numer negativ
     published_year: date
 
 
@@ -99,6 +99,8 @@ class LoanCreate(LoanBase):
 
 class LoanResponse(LoanBase):
     id: int
+    loan_date: Optional[date] = None
+    return_date: Optional[date] = None
 
     class Config:
         from_attributes = True

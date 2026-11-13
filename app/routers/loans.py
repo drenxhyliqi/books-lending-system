@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
@@ -18,7 +18,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 # GET / loans(filter: active, overdue, member_id) # check
 # POST / loans
-# PUT    / loans/{id}/return
+# POST   / loans/{id}/return
 
 
 @router.get("/", response_model=list[LoanResponse], status_code=status.HTTP_200_OK)
@@ -28,8 +28,8 @@ async def get_loans(db: db_dependency,
                     status: str | None = None,
                     member_id: int | None = None,
                     book_id: int | None = None,
-                    page: int = 1,
-                    page_size: int = 50
+                    page: int = Query(1, ge=1),
+                    page_size: int = Query(50, ge=1)
                     ):
     query = db.query(Loan)
     offset = (page - 1) * page_size
@@ -49,11 +49,11 @@ async def get_loans(db: db_dependency,
     if member_id is not None:
         query = query.filter(Loan.member_id == member_id)
 
-    return query.offset(offset).limit(page_size).all()
-
-    # 3
+    # Filtrimi 3 — book_id
     if book_id is not None:
         query = query.filter(Loan.book_id == book_id)
+
+    return query.order_by(Loan.id).offset(offset).limit(page_size).all()
 
 
 @router.post("/", response_model=LoanResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
@@ -92,7 +92,14 @@ async def create_loan(db: db_dependency, create_loan: LoanCreate):
             detail="Nuk ka kopje te disponueshme"
         )
 
-    # Validimi 3 - Loan date nga dita kur merr loan
+    # Validimi 3 - afati i kthimit nuk mund te jete ne te kaluaren
+    if create_loan.due_date < date.today():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Afati i kthimit nuk mund te jete ne te kaluaren"
+        )
+
+    # Validimi 4 - Loan date nga dita kur merr loan
     db_loan = Loan(
         member_id=create_loan.member_id,
         book_id=create_loan.book_id,
@@ -105,7 +112,7 @@ async def create_loan(db: db_dependency, create_loan: LoanCreate):
     return db_loan
 
 
-@router.post("/{book_id}/return", dependencies=[Depends(verify_api_key)])
+@router.post("/{loan_id}/return", response_model=LoanResponse, dependencies=[Depends(verify_api_key)])
 async def return_book(db: db_dependency, loan_id: int):
     # Validimi 1 a ekziston ky loan
     loan = db.query(Loan).filter(Loan.id == loan_id).first()

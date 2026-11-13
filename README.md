@@ -149,6 +149,8 @@ GET    /api/v1/books/{id}/loan-history
 POST   /api/v1/books/
 PUT    /api/v1/books/{id}
 DELETE /api/v1/books/{id}
+POST   /api/v1/books/{id}/authors/{author_id}
+DELETE /api/v1/books/{id}/authors/{author_id}
 ```
 
 ### Authors
@@ -191,4 +193,4 @@ The biggest thing I learned was how a backend system actually comes together, th
 
 If I had more time, I would replace the API key auth with a proper admin user system. Regular users would only have access to GET endpoints, while admins would get a JWT token on login and that token would be required for any endpoint that creates, updates, or deletes data.
 
-I know this is not a good approach but if you need the key to test the api endpoints that require that, here is it 'apikeylibrary' I added this on the .env file but since you can not have access in that, and you might need it to test the endpoints I will add it here.
+I know this is not a good approach but if you need the key to test the api endpoints that require that, here is it 'library-secret-key' I added this on the .env file but since you can not have access in that, and you might need it to test the endpoints I will add it here.

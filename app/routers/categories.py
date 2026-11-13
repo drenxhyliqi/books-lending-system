@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
@@ -19,17 +19,25 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.get("/", response_model=list[CategoryResponse])
 async def get_categories(db: db_dependency,
-                         page: int = 1,
-                         page_size: int = 10
+                         page: int = Query(1, ge=1),
+                         page_size: int = Query(10, ge=1)
                          ):
-    query = db.query(Category)
     offset = (page - 1) * page_size
 
-    return db.query(Category).offset(offset).limit(page_size).all()
+    return db.query(Category).order_by(Category.id).offset(offset).limit(page_size).all()
 
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_category(db: db_dependency, category: CategoryCreate):
+    name_exist = db.query(Category).filter(
+        Category.name == category.name).first()
+
+    if name_exist:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kjo kategori tashme ekziston"
+        )
+
     db_category = Category(**category.model_dump())
     db.add(db_category)
     db.commit()

@@ -1,8 +1,4 @@
-from sqlalchemy.orm import Session
-from typing_extensions import Annotated
-
-from fastapi import Depends, FastAPI, status
-from app.database import get_db
+from fastapi import FastAPI, status
 from app.routers import members, books, authors, categories, loans, reports
 
 

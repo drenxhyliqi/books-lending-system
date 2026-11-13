@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
@@ -24,15 +24,15 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.get("/", response_model=list[MemberResponse])  # Get member me filter
 async def get_members(db: db_dependency,
                       is_active: bool | None = None,
-                      page: int = 1,
-                      page_size: int = 100
+                      page: int = Query(1, ge=1),
+                      page_size: int = Query(100, ge=1)
                       ):
     query = db.query(Member)  # SELECT * FROM members
     offset = (page - 1) * page_size
     if is_active is not None:  # WHERE is_active = true
         query = query.filter(Member.is_active == is_active)
     # Ekzekuton queryn
-    return db.query(Member).offset(offset).limit(page_size).all()
+    return query.order_by(Member.id).offset(offset).limit(page_size).all()
 
 
 @router.get("/{member_id}", response_model=MemberResponse)
@@ -47,8 +47,8 @@ async def get_member(db: db_dependency, member_id: int):
 
 
 @router.get("/{member_id}/loans", response_model=list[LoanResponse])
-async def get_member_loans(db: db_dependency, memb_id: int):
-    member = db.query(Member).filter(Member.id == memb_id).first()
+async def get_member_loans(db: db_dependency, member_id: int):
+    member = db.query(Member).filter(Member.id == member_id).first()
 
     if not member:
         raise HTTPException(
@@ -85,6 +85,18 @@ async def update_member(db: db_dependency, member_id: int, member: MemberCreate)
             detail="Ky person nuk eshte nje anetar i biblotekes"
         )
 
+    # Email duhet me qene unik, por pa e llogarit vete kete anetar
+    email_exist = db.query(Member).filter(
+        Member.email == member.email,
+        Member.id != member_id
+    ).first()
+
+    if email_exist:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ky email tashme ekziston!"
+        )
+
     db_member.full_name = member.full_name
     db_member.email = member.email
     db_member.join_date = member.join_date
@@ -115,5 +127,7 @@ async def delete_member(db: db_dependency, member_id: int):
             detail="Ky anetar ka loan aktive"
         )
 
+    # Huazimet e kthyera fshihen bashke me anetarin, perndryshe mbesin me member_id null
+    db.query(Loan).filter(Loan.member_id == member_id).delete()
     db.delete(member)
     db.commit()

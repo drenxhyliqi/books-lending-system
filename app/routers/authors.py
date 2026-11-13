@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
@@ -20,11 +20,11 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.get("/", response_model=list[AuthorResponse])
 async def get_authors(db: db_dependency,
-                      page: int = 1,
-                      page_size: int = 30
+                      page: int = Query(1, ge=1),
+                      page_size: int = Query(30, ge=1)
                       ):
     offset = (page - 1) * page_size
-    return db.query(Author).offset(offset).limit(page_size).all()
+    return db.query(Author).order_by(Author.id).offset(offset).limit(page_size).all()
 
 
 @router.get("/{author_id}", response_model=AuthorResponse)
@@ -40,7 +40,7 @@ async def get_author(db: db_dependency, author_id: int):
     return author_exist
 
 
-@router.post("/", response_model=AuthorResponse, dependencies=[Depends(verify_api_key)])
+@router.post("/", response_model=AuthorResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
 async def create_author(db: db_dependency,
                         author: AuthorCreate
                         ):

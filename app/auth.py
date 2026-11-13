@@ -8,7 +8,7 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 
 
-async def verify_api_key(api_key: str = Header(...)):
+async def verify_api_key(api_key: str = Header(..., alias="X-API-Key")):
     if api_key != API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Annotated
@@ -13,7 +13,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/top-borrowers", response_model=list[TopBorrowerResponse])
-async def top_borrowers(db: db_dependency, limit: int = 5):
+async def top_borrowers(db: db_dependency, limit: int = Query(5, ge=1)):
 
     results = (
         db.query(Member, func.count(Loan.id).label("total_loans")).join(Loan).group_by(
