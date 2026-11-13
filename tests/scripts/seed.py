@@ -12,7 +12,11 @@ def seed():
     db = SessionLocal()
 
     try:
-        # ── CATEGORIES (4) ──────────────────────────
+        if db.query(Category).first() is not None:
+            print("Database already seeded, skipping")
+            return
+
+        # ── CATEGORIES (4)──────────────────────────
         categories = [
             Category(name="Fiction"),
             Category(name="Science"),

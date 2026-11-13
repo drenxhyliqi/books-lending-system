@@ -8,8 +8,8 @@ from alembic import context
 # Importet per databaze
 import os
 from dotenv import load_dotenv
-from database import Base
-import models
+from app.database import Base
+from app import models
 
 
 # this is the Alembic Config object, which provides

@@ -75,7 +75,15 @@ Interactive docs at `http://localhost:8000/docs`
 docker compose up
 ```
 
-This starts both the FastAPI app and a PostgreSQL database. The API will be available at `http://localhost:8000`.
+This starts both the FastAPI app and a PostgreSQL database, and applies migrations on startup. The API will be available at `http://localhost:8000`.
+
+If ports 8000 or 5432 are already in use, set `API_PORT` and/or `DB_PORT` (in `.env` or your shell) to pick different host ports.
+
+To seed the Docker database:
+
+```bash
+docker compose exec api python tests/scripts/seed.py
+```
 
 Make sure you have a `.env.docker` file:
 
