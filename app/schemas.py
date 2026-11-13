@@ -144,6 +144,21 @@ class AskResponse(BaseModel):
     book_ids: list[int]
 
 
+# Forma qe duhet ta ktheje modeli per rekomandimet: nje arsye per secilin liber
+class RecommendationReason(BaseModel):
+    book_id: int
+    reason: str
+
+
+class RecommendationReasons(BaseModel):
+    recommendations: list[RecommendationReason]
+
+
+# Libri i rekomanduar bashke me arsyen
+class BookRecommendation(BookResponse):
+    reason: str
+
+
 # Borrowers
 
 class TopBorrowerResponse(BaseModel):

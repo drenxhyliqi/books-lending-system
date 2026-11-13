@@ -148,6 +148,7 @@ GET  /api/v1/health
 GET    /api/v1/members/
 GET    /api/v1/members/{id}
 GET    /api/v1/members/{id}/loans
+GET    /api/v1/members/{id}/recommendations
 POST   /api/v1/members/
 PUT    /api/v1/members/{id}
 DELETE /api/v1/members/{id}

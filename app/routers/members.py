@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import ValidationError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Annotated
 from starlette import status
@@ -7,8 +9,9 @@ from app.auth import verify_api_key
 
 # Database imports
 from app.database import get_db
-from app.models import Member, Loan
-from app.schemas import LoanResponse, MemberCreate, MemberResponse
+from app.models import Book, Member, Loan
+from app.schemas import BookRecommendation, LoanResponse, MemberCreate, MemberResponse, RecommendationReasons
+from app.ai import ask_model, book_to_text
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/members", tags=["members"])
@@ -19,6 +22,17 @@ db_dependency = Annotated[Session, Depends(get_db)]
 # APIEndpoint - Krijo nje anetar #check
 # APIEndpoint - Perditeso nje anetar specifk #check
 # APIEndpoint - Fshij nje anetar specifk #check
+# APIEndpoint - Rekomando libra per nje anetar sipas huazimeve te tij
+
+RECOMMEND_PROMPT = (
+    "You are the librarian of a small library. "
+    "You get the books a member has borrowed and a list of recommended books. "
+    "For each recommended book write one short sentence in Albanian that says "
+    "why it fits someone who borrowed those books. "
+    "Use only the ids of the recommended books. "
+    'Reply only with JSON in the form '
+    '{"recommendations": [{"book_id": 1, "reason": "..."}]}.'
+)
 
 
 @router.get("/", response_model=list[MemberResponse])  # Get member me filter
@@ -57,6 +71,109 @@ async def get_member_loans(db: db_dependency, member_id: int):
         )
 
     return member.loans  # SELECT * FROM loans WHERE memb_id = 1
+
+
+@router.get("/{member_id}/recommendations", response_model=list[BookRecommendation])
+async def get_member_recommendations(db: db_dependency,
+                                     member_id: int,
+                                     limit: int = Query(3, ge=1, le=10)
+                                     ):
+    member = db.query(Member).filter(Member.id == member_id).first()
+
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Anetari nuk u gjet!"
+        )
+
+    borrowed_ids = [loan.book_id for loan in member.loans]
+    borrowed = db.query(Book).filter(
+        Book.id.in_(borrowed_ids),
+        Book.embedding != None
+    ).all()
+
+    # Pa huazime nuk dihet shija e anetarit, kthehen librat me te huazuar
+    # Njejt si top-borrowers te reports, dhe modeli nuk thirret fare
+    if not borrowed:
+        popular = (
+            db.query(Book, func.count(Loan.id).label("total_loans"))
+            .join(Loan)
+            .group_by(Book.id)
+            .order_by(func.count(Loan.id).desc())
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            BookRecommendation(
+                id=book.id,
+                title=book.title,
+                isbn=book.isbn,
+                category_id=book.category_id,
+                total_copies=book.total_copies,
+                published_year=book.published_year,
+                description=book.description,
+                reason="Nje nga librat me te huazuar ne biblioteke"
+            )
+            for book, total_loans in popular
+        ]
+
+    # Mesatarja e vektoreve te librave te huazuar = shija e anetarit si nje vektor
+    # zip i merr numrat ne te njejtin pozicion nga secili vektor
+    taste = [
+        sum(values) / len(borrowed)
+        for values in zip(*(book.embedding for book in borrowed))
+    ]
+
+    # Librat me te afert me ate shije, pa ata qe i ka huazuar ndonjehere
+    candidates = (
+        db.query(Book)
+        .filter(Book.embedding != None, Book.id.notin_(borrowed_ids))
+        .order_by(Book.embedding.cosine_distance(taste))
+        .limit(limit)
+        .all()
+    )
+
+    if not candidates:
+        return []
+
+    # Modelit i dergohen vetem librat, asnje e dhene e anetarit
+    borrowed_text = "\n".join(f"- {book.title}: {book.description}" for book in borrowed)
+    candidates_text = "\n\n".join(
+        f"[id {book.id}]\n{book_to_text(book)}" for book in candidates
+    )
+
+    try:
+        answer = RecommendationReasons.model_validate_json(ask_model(
+            RECOMMEND_PROMPT,
+            f"Borrowed books:\n{borrowed_text}\n\nRecommended books:\n{candidates_text}"
+        ))
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Modeli ktheu pergjigje te pavlefshme"
+        )
+
+    # Arsyet per id qe nuk jane te kandidatet hidhen poshte
+    candidate_ids = [book.id for book in candidates]
+    reasons = {
+        item.book_id: item.reason
+        for item in answer.recommendations if item.book_id in candidate_ids
+    }
+
+    return [
+        BookRecommendation(
+            id=book.id,
+            title=book.title,
+            isbn=book.isbn,
+            category_id=book.category_id,
+            total_copies=book.total_copies,
+            published_year=book.published_year,
+            description=book.description,
+            reason=reasons.get(book.id, "I ngjashem me librat qe ke huazuar")
+        )
+        for book in candidates
+    ]
 
 
 @router.post("/", response_model=MemberResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_api_key)])
