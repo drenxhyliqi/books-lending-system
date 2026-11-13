@@ -9,8 +9,9 @@ from starlette import status
 # Database imports
 from app.database import get_db
 from app.models import Author, Book, BookAuthor, Category, Loan
-from app.schemas import AuthorResponse, BookCreate, BookResponse, LoanResponse
+from app.schemas import AuthorResponse, BookCreate, BookResponse, BookSearchPage, LoanResponse
 from app.auth import verify_api_key
+from app.ai import book_to_text, create_embedding
 
 # Per mos me shkru /members/... ne qdo endpoint prefix /
 router = APIRouter(prefix="/books", tags=["books"])
@@ -67,7 +68,7 @@ async def get_books(db: db_dependency,
     return query.order_by(Book.id).offset(offset).limit(page_size).all()
 
 
-@router.get("/search")
+@router.get("/search", response_model=BookSearchPage)
 async def search_books(
     db: db_dependency,
     q: str | None = None,
@@ -197,6 +198,8 @@ async def add_book_author(db: db_dependency, book_id: int, author_id: int):
 
     # SQLAlchemy e shton vete rreshtin ne tabelen book_authors
     book.authors.append(author)
+    # Autoret jane pjese e embedding, prandaj krijohet prape
+    book.embedding = create_embedding(book_to_text(book))
     db.commit()
     return book.authors
 
@@ -218,6 +221,7 @@ async def remove_book_author(db: db_dependency, book_id: int, author_id: int):
         )
 
     book.authors.remove(author)
+    book.embedding = create_embedding(book_to_text(book))
     db.commit()
 
 
@@ -242,6 +246,10 @@ async def create_book(db: db_dependency, book: BookCreate):
 
     db_book = Book(**book.model_dump())
     db.add(db_book)
+    # flush e dergon librin ne databaze pa commit, qe te lexohet kategoria e tij
+    # Nese OpenAI deshton, commit nuk behet dhe libri nuk ruhet
+    db.flush()
+    db_book.embedding = create_embedding(book_to_text(db_book))
     db.commit()
     db.refresh(db_book)
     return db_book
@@ -283,7 +291,11 @@ async def update_book(db: db_dependency, book_id: int, book: BookCreate):
     book_exist.category_id = book.category_id
     book_exist.total_copies = book.total_copies
     book_exist.published_year = book.published_year
+    book_exist.description = book.description
 
+    # Embedding krijohet prape sepse teksti i librit ka ndryshu
+    db.flush()
+    book_exist.embedding = create_embedding(book_to_text(book_exist))
     db.commit()
     db.refresh(book_exist)
     return book_exist

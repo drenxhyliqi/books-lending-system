@@ -1,6 +1,8 @@
 
 from app.database import Base
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Date
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Date, Text
+# Tipi vector per kolonen embedding
+from pgvector.sqlalchemy import Vector
 # Mundeson navigim me te lehte mes tabelave
 from sqlalchemy.orm import relationship
 
@@ -43,6 +45,9 @@ class Book(Base):
     category_id = Column(Integer, ForeignKey("categories.id"))
     total_copies = Column(Integer, default=0)
     published_year = Column(Date)
+    description = Column(Text, nullable=True)
+    # 1536 numra nga text-embedding-3-small, perdoret per kerkim sipas kuptimit
+    embedding = Column(Vector(1536), nullable=True)
 
     category = relationship("Category", back_populates="books")
     authors = relationship(

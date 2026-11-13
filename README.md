@@ -58,6 +58,14 @@ This will populate the database with:
 - 10 members
 - 31 loans (mix of active, returned, and overdue)
 
+### Create embeddings for the books
+
+```bash
+python tests/scripts/embed_books.py
+```
+
+This calls the OpenAI API once for every book that has no embedding yet (needs `OPENAI_API_KEY`). Semantic search only finds books that have an embedding. Books created or updated through the API get their embedding automatically.
+
 ---
 
 ## Running the Server

@@ -67,6 +67,7 @@ class BookBase(BaseModel):
     category_id: int
     total_copies: int = Field(ge=0)  # nuk lejohet numer negativ
     published_year: date
+    description: str | None = None
 
 
 class BookCreate(BookBase):
@@ -78,6 +79,20 @@ class BookResponse(BookBase):
 
     class Config:
         from_attributes = True
+
+
+# Libri bashke me autoret, per search endpoint
+class BookWithAuthorsResponse(BookResponse):
+    authors: list[AuthorResponse]
+
+
+# Embedding nuk eshte ne asnje schema, pra nuk kthehet kurre nga API
+class BookSearchPage(BaseModel):
+    items: list[BookWithAuthorsResponse]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
 
 
 # Book Author nuk ka nevoj per schema
